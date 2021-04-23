@@ -1,10 +1,29 @@
-const fs = require('fs');
-const p = require('path');
+const fs = require('fs')
+const p = require('path')
 const createSvgSymbol = require('./create-svg-symbol.js')
 // const filterLog = require('./filter-log.js')
 
+const db = {
+  read(dir) {
+    return new Promise((resolve, reject)=>{
+      fs.readFile(dir, 'utf-8', (error, content) => {
+        if (!content) return false
+        resolve(content)
+      })
+    })
+  },
+  write (dir, result) {
+    return new Promise((resolve, reject) => {
+      fs.writeFile(dir, result, 'utf8', (error) => {
+        if (error) return reject(error)
+        resolve()
+      })
+    })
+  },
+}
+
 const util = {
-  dir(filePath) {
+  dir (filePath) {
     return new Promise((resolve, reject) => {
       fs.readdir(filePath, (error, fileList) => {
         if (error) return reject(error)
@@ -12,62 +31,70 @@ const util = {
       })
     })
   },
-  read(dir) {
+  createSvg (dir, name) {
     return new Promise((resolve, reject) => {
       fs.readFile(dir, 'utf-8', (error, content) => {
-        const result = content
-        console.log('result')
-        console.log(result)
+        const result = createSvgSymbol(content, name)
         if (!result) return false
         resolve(result)
       })
     })
   },
-  write(dir, result) {
+  write (dir, result) {
     return new Promise((resolve, reject) => {
       fs.writeFile(dir, result, 'utf8', (error) => {
         if (error) return reject(error)
         resolve()
       })
     })
-  }
-}
-
-async function gitFilePath(path) {
-  const filePath = p.resolve(path);
-  const fileList = await util.dir(filePath)
-  fileList.forEach(fileName => {
-
-    const fileDir = p.join(filePath, fileName)
-    // stat: get file information
-    fs.stat(fileDir, async (error, state) => {
-      if (error) return console.log(error)
-
-      const isFile = state.isFile()
-      const isDir = state.isDirectory()
-
-      if (isFile) {
-        const suffix = p.extname(fileDir)
-        if (suffix && suffix === '.svg') {
-          const result = await util.read(fileDir)
-          await util.write(fileDir, result)
-        }
-      } else if (isDir) {
-        await gitFilePath(fileDir)
-      }
+  },
+  isFile (fileDir) {
+    return new Promise((resolve, reject) => {
+      fs.stat(fileDir, async (error, state) => {
+        if (error) return reject(error)
+        resolve(state.isFile())
+      })
     })
-  })
-}
-
-function dirLoop(param) {
-  let pathList
-  if (!param || param.length === 0) {
-    pathList = ['src']
-  } else {
-    pathList = [...param]
   }
-  pathList.forEach(path => gitFilePath(path))
 }
 
-module.exports.gitFilePath = gitFilePath
-module.exports.dirLoop = dirLoop
+async function joinSvg (src) {
+
+
+  async function gitFilePath (path) {
+    let svg = '<svg>'
+    const filePath = p.resolve(path)
+    const fileList = await util.dir(filePath)
+    console.log('fileList')
+    console.log(fileList)
+    for (let i = 0; i<fileList.length; i++) {
+      const fileName = fileList[i]
+      const fileDir = p.join(filePath, fileName)
+      const isFile = await util.isFile(fileDir)
+      const suffix = p.extname(fileDir)
+      if (isFile && suffix && suffix === '.svg') {
+        const result = await util.createSvg(fileDir, fileName.replace('.svg', '')) // 传入文件路径、文件名称(不包含后缀)
+        console.log('result')
+        console.log(result)
+        svg += result
+      }
+    }
+    return svg
+  }
+
+  const a = await gitFilePath(src) + '</svg>'
+  console.log('a')
+  console.log(a)
+
+  const template = await db.read(p.join(p.resolve('utils'), 'template.js'))
+  console.log('template')
+  console.log(template)
+  const finallyJs = template.replace('#@@#', a)
+  console.log('finallyJs')
+  console.log(finallyJs)
+  await db.write(p.join(p.resolve('result'), 'import-svg.js'), finallyJs)
+}
+
+void joinSvg('icons')
+
+module.exports.joinSvg = joinSvg
