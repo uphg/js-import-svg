@@ -1,30 +1,73 @@
-document.addEventListener("DOMContentLoaded", function() {
-  let string = `
-  <svg>
-    <symbol id="icon-bold-left" viewBox="0 0 1024 1024">
-      <path d="M762.9 52.1c-30.4-31.3-79.7-31.3-110.2 0L261 455.3c-30.4 31.3-30.4 82.1 0 113.4l391.7 403.2c30.5 31.3 79.8 31.3 110.2 0 30.4-31.3 30.4-82.1 0-113.4L426.3 512l336.6-346.5c30.5-31.3 30.5-82.1 0-113.4z"  ></path>
-    </symbol>
-  </svg>
-  `
+const fs = require('fs');
+const p = require('path');
+const createSvgSymbol = require('./create-svg-symbol.js')
+// const filterLog = require('./filter-log.js')
 
-  let div = (document.createElement("div")).innerHTML = string
-  string = null
+const util = {
+  dir(filePath) {
+    return new Promise((resolve, reject) => {
+      fs.readdir(filePath, (error, fileList) => {
+        if (error) return reject(error)
+        resolve(fileList)
+      })
+    })
+  },
+  read(dir) {
+    return new Promise((resolve, reject) => {
+      fs.readFile(dir, 'utf-8', (error, content) => {
+        const result = content
+        console.log('result')
+        console.log(result)
+        if (!result) return false
+        resolve(result)
+      })
+    })
+  },
+  write(dir, result) {
+    return new Promise((resolve, reject) => {
+      fs.writeFile(dir, result, 'utf8', (error) => {
+        if (error) return reject(error)
+        resolve()
+      })
+    })
+  }
+}
 
-  let svg = div.getElementsByTagName("svg")[0]
-  svg.setAttribute("aria-hidden","true")
+async function gitFilePath(path) {
+  const filePath = p.resolve(path);
+  const fileList = await util.dir(filePath)
+  fileList.forEach(fileName => {
 
-  svg.style.position = "absolute"
-  svg.style.width = 0
-  svg.style.height = 0,
-  svg.style.overflow = "hidden"
+    const fileDir = p.join(filePath, fileName)
+    // stat: get file information
+    fs.stat(fileDir, async (error, state) => {
+      if (error) return console.log(error)
 
-  let body = document.body
+      const isFile = state.isFile()
+      const isDir = state.isDirectory()
 
-  body.firstChild ? svg = body.firstChild : body.firstChild.parentNode.insertBefore(div, svg)
-})
+      if (isFile) {
+        const suffix = p.extname(fileDir)
+        if (suffix && suffix === '.svg') {
+          const result = await util.read(fileDir)
+          await util.write(fileDir, result)
+        }
+      } else if (isDir) {
+        await gitFilePath(fileDir)
+      }
+    })
+  })
+}
 
+function dirLoop(param) {
+  let pathList
+  if (!param || param.length === 0) {
+    pathList = ['src']
+  } else {
+    pathList = [...param]
+  }
+  pathList.forEach(path => gitFilePath(path))
+}
 
-
-
-
-
+module.exports.gitFilePath = gitFilePath
+module.exports.dirLoop = dirLoop
