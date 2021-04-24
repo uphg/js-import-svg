@@ -9,19 +9,6 @@ const re = {
   get (rule, text) {
     const result = rule.exec(text)
     return result[0]
-  },
-  getters (rule, text) {
-    const result = rule.exec(text)
-    return result
-  },
-  before (rule, text) {
-    const index = text.search(rule)
-    return text.slice(0, index)
-  },
-  after (rule, text) {
-    const index = text.search(rule)
-    const base = this.get(rule, text)
-    return text.slice(index + base.length)
   }
 }
 
