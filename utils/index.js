@@ -1,29 +1,28 @@
 const fs = require('fs')
 const p = require('path')
 const createSvgSymbol = require('./create-svg-symbol.js')
-// const filterLog = require('./filter-log.js')
 
 const db = {
   read(dir) {
-    return new Promise((resolve, reject)=>{
+    return new Promise((resolve, reject) => {
       fs.readFile(dir, 'utf-8', (error, content) => {
         if (!content) return false
         resolve(content)
       })
     })
   },
-  write (dir, result) {
+  write(dir, result) {
     return new Promise((resolve, reject) => {
       fs.writeFile(dir, result, 'utf8', (error) => {
         if (error) return reject(error)
         resolve()
       })
     })
-  },
+  }
 }
 
 const util = {
-  dir (filePath) {
+  dir(filePath) {
     return new Promise((resolve, reject) => {
       fs.readdir(filePath, (error, fileList) => {
         if (error) return reject(error)
@@ -31,7 +30,23 @@ const util = {
       })
     })
   },
-  createSvg (dir, name) {
+  isFile(fileDir) {
+    return new Promise((resolve, reject) => {
+      fs.stat(fileDir, async (error, state) => {
+        if (error) return reject(error)
+        resolve(state.isFile())
+      })
+    })
+  },
+  isDir(fileDir) {
+    return new Promise((resolve, reject) => {
+      fs.stat(fileDir, async (error, state) => {
+        if (error) return reject(error)
+        resolve(state.isDirectory())
+      })
+    })
+  },
+  createSvg(dir, name) {
     return new Promise((resolve, reject) => {
       fs.readFile(dir, 'utf-8', (error, content) => {
         const result = createSvgSymbol(content, name)
@@ -40,61 +55,38 @@ const util = {
       })
     })
   },
-  write (dir, result) {
-    return new Promise((resolve, reject) => {
-      fs.writeFile(dir, result, 'utf8', (error) => {
-        if (error) return reject(error)
-        resolve()
-      })
-    })
-  },
-  isFile (fileDir) {
-    return new Promise((resolve, reject) => {
-      fs.stat(fileDir, async (error, state) => {
-        if (error) return reject(error)
-        resolve(state.isFile())
-      })
-    })
-  }
-}
-
-async function joinSvg (src) {
-
-
-  async function gitFilePath (path) {
-    let svg = '<svg>'
+  async accumulate(path, data) {
     const filePath = p.resolve(path)
     const fileList = await util.dir(filePath)
-    console.log('fileList')
-    console.log(fileList)
-    for (let i = 0; i<fileList.length; i++) {
+    console.log('\nfileList')
+    console.log(fileList + '\n')
+    for (let i = 0; i < fileList.length; i++) {
       const fileName = fileList[i]
       const fileDir = p.join(filePath, fileName)
       const isFile = await util.isFile(fileDir)
+      const isDir = await util.isDir(fileDir)
       const suffix = p.extname(fileDir)
       if (isFile && suffix && suffix === '.svg') {
-        const result = await util.createSvg(fileDir, fileName.replace('.svg', '')) // 传入文件路径、文件名称(不包含后缀)
-        console.log('result')
-        console.log(result)
-        svg += result
+        // 传入文件路径、文件名称(不包含后缀)
+        const result = await util.createSvg(fileDir, fileName.replace('.svg', ''))
+        data += result
+      } else if(isDir) {
+        data = await this.accumulate(fileDir, data)
       }
     }
-    return svg
+    return data
   }
-
-  const a = await gitFilePath(src) + '</svg>'
-  console.log('a')
-  console.log(a)
-
-  const template = await db.read(p.join(p.resolve('utils'), 'template.js'))
-  console.log('template')
-  console.log(template)
-  const finallyJs = template.replace('#@@#', a)
-  console.log('finallyJs')
-  console.log(finallyJs)
-  await db.write(p.join(p.resolve('result'), 'import-svg.js'), finallyJs)
 }
 
-void joinSvg('icons')
+async function joinSvg(src) {
+  let svg = ''
+  const svgList = await util.accumulate(src, svg)
+  const svgElement = '<svg>' + svgList + '</svg>'
+
+  const template = await db.read(p.join(p.resolve('utils'), 'template.js'))
+  const importJs = template.replace('#@@#', svgElement)
+  // 将文件导出到 result/import-svg.js
+  await db.write(p.join(p.resolve('result'), 'import-svg.js'), importJs)
+}
 
 module.exports.joinSvg = joinSvg
