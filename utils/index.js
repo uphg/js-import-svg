@@ -83,10 +83,13 @@ async function joinSvg(src) {
   const svgList = await util.accumulate(src, svg)
   const svgElement = '<svg>' + svgList + '</svg>'
 
+  // 获取 js 引入 svg 的模板
   const template = await db.read(p.join(p.resolve('utils'), 'template.js'))
   const importJs = template.replace('#@@#', svgElement)
-  // 将文件导出到 result/import-svg.js
-  await db.write(p.join(p.resolve('result'), 'import-svg.js'), importJs)
+
+  // 将内容导出到 result/import-svg.js
+  const resultUrl = p.join(p.resolve('result'), 'import-svg.js')
+  await db.write(resultUrl, importJs)
 }
 
 module.exports.joinSvg = joinSvg
