@@ -1,4 +1,4 @@
-const ICON_PREFIX = 'tulp-icon'
+const ICON_PREFIX = 'tu-icon'
 
 const rules = {
   SVG_BEFORE: /<svg[^>]+>/,
