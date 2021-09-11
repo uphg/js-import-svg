@@ -85,7 +85,7 @@ async function joinSvg(src) {
 
   // 获取 js 引入 svg 的模板
   const template = await db.read(p.join(p.resolve('utils'), 'template.js'))
-  const importJs = template.replace('#@@#', svgElement)
+  const importJs = template.replace('#__#', svgElement)
 
   // 将内容导出到 result/import-svg.js
   const resultUrl = p.join(p.resolve('result'), 'import-svg.js')
