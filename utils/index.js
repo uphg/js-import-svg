@@ -49,6 +49,8 @@ const util = {
   createSvg(dir, name) {
     return new Promise((resolve, reject) => {
       fs.readFile(dir, 'utf-8', (error, content) => {
+        console.log('content')
+        console.log(content)
         const result = createSvgSymbol(content, name)
         if (!result) return false
         resolve(result)
