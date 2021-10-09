@@ -49,8 +49,6 @@ const util = {
   createSvg(dir, name) {
     return new Promise((resolve, reject) => {
       fs.readFile(dir, 'utf-8', (error, content) => {
-        console.log('content')
-        console.log(content)
         const result = createSvgSymbol(content, name)
         if (!result) return false
         resolve(result)
@@ -60,8 +58,6 @@ const util = {
   async accumulate(path, data) {
     const filePath = p.resolve(path)
     const fileList = await util.dir(filePath)
-    console.log('\nfileList')
-    console.log(fileList + '\n')
     for (let i = 0; i < fileList.length; i++) {
       const fileName = fileList[i]
       const fileDir = p.join(filePath, fileName)

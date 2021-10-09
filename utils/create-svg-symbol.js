@@ -20,21 +20,11 @@ const re = {
 function createSvgSymbol (content, name) {
   const svgBefore = re.get(rules.SVG_BEFORE, content)
   const viewBox = re.get(rules.VIEW_BOX, svgBefore)
-  console.log('content')
-  console.log('svgBefore')
-  console.log(svgBefore)
-  console.log ('viewBox')
-  console.log (viewBox)
-  // const pathLabels = content.match(rules.CONTENT)
   const main = content.match(rules.CONTENT)[0]
-  console.log('main')
-  console.log(main)
   let symbol = `<symbol id="${ICON_PREFIX}-${name}" viewBox="${viewBox}">`
-  // pathLabels.forEach(pathLabel => {
-  //   symbol += pathLabel.replace(rules.AIR, ' ').replace(rules.AIR_SUFFIX, '')
-  // })
-  symbol += main.replace(rules.AIR, ' ').replace(rules.AIR_SUFFIX, '')
-  symbol += '</symbol>'
+
+  symbol += main.replace(rules.AIR, ' ').replace(rules.AIR_SUFFIX, '').replace(` fill="currentColor">`, '>')
+  symbol += `</symbol>`
 
   return symbol
 }
