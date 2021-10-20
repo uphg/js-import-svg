@@ -23,7 +23,7 @@ function createSvgSymbol (content, name) {
   const main = content.match(rules.CONTENT)[0]
   let symbol = `<symbol id="${ICON_PREFIX}-${name}" viewBox="${viewBox}">`
 
-  symbol += main.replace(rules.AIR, ' ').replace(rules.AIR_SUFFIX, '').replace(` fill="currentColor">`, '>')
+  symbol += main.replace(/fill="currentColor"/g, '').replace(rules.AIR, ' ').replace(rules.AIR_SUFFIX, '')
   symbol += `</symbol>`
 
   return symbol

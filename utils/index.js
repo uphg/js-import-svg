@@ -86,8 +86,11 @@ async function joinSvg(src) {
   const importJs = template.replace('#__#', svgElement)
 
   // 将内容导出到 result/import-svg.js
-  const resultUrl = p.join(p.resolve('result'), 'import-svg.js')
-  await db.write(resultUrl, importJs)
+  const jsImportUrl = p.join(p.resolve('result'), 'import-svg.js')
+  const templateUrl = p.join(p.resolve('result'), 'template.vue')
+
+  await db.write(jsImportUrl, importJs)
+  await db.write(templateUrl, `<template>\n  ${svgElement}\n</template>`)
 }
 
 module.exports.joinSvg = joinSvg
